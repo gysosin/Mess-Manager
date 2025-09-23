@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Organizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .folder-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .folder-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .folder-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .browse-btn {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .browse-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .organize-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .organize-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .organize-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .folder-browser {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .folder-browser-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .folder-browser-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+        }
+
+        .current-path {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            word-break: break-all;
+            font-size: 0.9em;
+        }
+
+        .folder-list {
+            list-style: none;
+        }
+
+        .folder-item {
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .folder-item:hover {
+            background: #f8f9fa;
+        }
+
+        .folder-item.parent {
+            color: #666;
+            font-style: italic;
+        }
+
+        .select-folder-btn {
+            width: 100%;
+            padding: 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .select-folder-btn:hover {
+            background: #218838;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗂️ File Organizer</h1>
+            <p>Automatically organize your files into categories</p>
+        </div>
+
+        <form id="organizeForm">
+            <div class="form-group">
+                <label for="folderPath">Select Folder to Organize:</label>
+                <div class="folder-input-container">
+                    <input type="text" id="folderPath" name="folder_path" class="folder-input"
+                           value="{{ default_folder }}" placeholder="Enter folder path..." required>
+                    <button type="button" class="browse-btn" onclick="openFolderBrowser()">📁 Browse</button>
+                </div>
+            </div>
+
+            <button type="submit" class="organize-btn" id="organizeBtn">
+                🚀 Organize Files
+            </button>
+        </form>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <!-- Folder Browser Modal -->
+    <div id="folderBrowser" class="folder-browser">
+        <div class="folder-browser-content">
+            <div class="folder-browser-header">
+                <h3>📁 Browse Folders</h3>
+                <button class="close-btn" onclick="closeFolderBrowser()">×</button>
+            </div>
+
+            <div id="currentPath" class="current-path"></div>
+            <ul id="folderList" class="folder-list"></ul>
+            <button class="select-folder-btn" onclick="selectCurrentFolder()">
+                ✅ Select This Folder
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentBrowsePath = '';
+
+        document.getElementById('organizeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('organizeBtn');
+            const folderPath = document.getElementById('folderPath').value;
+            const messageDiv = document.getElementById('message');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Organizing...';
+            messageDiv.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('folder_path', folderPath);
+
+                const response = await fetch('/organize', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                } else {
+                    showMessage(result.error || 'An error occurred', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🚀 Organize Files';
+            }
+        });
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+        }
+
+        function openFolderBrowser() {
+            const currentFolder = document.getElementById('folderPath').value || '{{ default_folder }}';
+            browsePath(currentFolder);
+            document.getElementById('folderBrowser').style.display = 'block';
+        }
+
+        function closeFolderBrowser() {
+            document.getElementById('folderBrowser').style.display = 'none';
+        }
+
+        function selectCurrentFolder() {
+            document.getElementById('folderPath').value = currentBrowsePath;
+            closeFolderBrowser();
+        }
+
+        async function browsePath(path) {
+            currentBrowsePath = path;
+            document.getElementById('currentPath').textContent = path;
+
+            try {
+                const response = await fetch(`/browse?path=${encodeURIComponent(path)}`);
+                const result = await response.json();
+
+                if (result.error) {
+                    showMessage(result.error, 'error');
+                    return;
+                }
+
+                const folderList = document.getElementById('folderList');
+                folderList.innerHTML = '';
+
+                // Add parent directory option
+                if (result.parent_path) {
+                    const parentItem = document.createElement('li');
+                    parentItem.className = 'folder-item parent';
+                    parentItem.innerHTML = '📁 .. (Go up)';
+                    parentItem.onclick = () => browsePath(result.parent_path);
+                    folderList.appendChild(parentItem);
+                }
+
+                // Add folders
+                result.items.forEach(item => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'folder-item';
+                    listItem.innerHTML = `📁 ${item.name}`;
+                    listItem.onclick = () => browsePath(item.path);
+                    folderList.appendChild(listItem);
+                });
+
+                if (result.items.length === 0 && !result.parent_path) {
+                    const emptyItem = document.createElement('li');
+                    emptyItem.className = 'folder-item';
+                    emptyItem.style.color = '#999';
+                    emptyItem.textContent = 'No folders found';
+                    folderList.appendChild(emptyItem);
+                }
+
+            } catch (error) {
+                showMessage('Error browsing folders: ' + error.message, 'error');
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('folderBrowser').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeFolderBrowser();
+            }
+        });
+    </script>
+</body>
+</html>
