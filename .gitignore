@@ -180,3 +180,6 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 .claude/settings.local.json
+.env
+
+.env
